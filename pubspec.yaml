@@ -13,6 +13,7 @@ dependencies:
   audioplayers: ^6.5.0
   volume_controller: ^3.4.0
   shimmer: ^3.0.0
+  lottie: ^3.3.1
 
 dev_dependencies:
   flutter_test:
@@ -24,6 +25,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/
 
   # To add assets to your package, add an assets section, like this:
   # assets:
