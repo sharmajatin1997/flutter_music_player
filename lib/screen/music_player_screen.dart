@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:music_player/screen/gradient_progress_bar.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:music_player/service/audio_services.dart';
@@ -25,6 +26,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Duration _duration = Duration.zero;
   Duration _bufferedPosition = Duration.zero;
   int _currentIndex = 0;
+  final PageController _pageController = PageController();
 
   String get currentSong => widget.songs[_currentIndex];
 
@@ -242,6 +244,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
+  final List<String> lottieFiles = [
+    'assets/headphone.json',
+    'assets/headphone.json',
+  ];
+
   Widget _buildHeaderArtwork() {
     return _isLoading
         ? Shimmer.fromColors(
@@ -256,8 +263,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         ),
       ),
     )
-        : Stack(
-      alignment: Alignment.center,
+        : Column(
       children: [
         Container(
           height: MediaQuery.of(context).size.height * 0.4,
@@ -270,19 +276,30 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               end: Alignment.bottomRight,
             ),
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.black12,
-            borderRadius: BorderRadius.circular(8),
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: lottieFiles.length,
+            itemBuilder: (context, index) {
+              return Center(
+                child: Lottie.asset(
+                  lottieFiles[index],
+                  package: 'music_player',
+                  repeat: true,
+                  fit: BoxFit.contain,
+                ),
+              );
+            },
           ),
-          child: Center(
-            child: Lottie.asset(
-              'assets/headphone.json',
-              package: 'music_player',
-              repeat: true,
-            ),
+        ),
+        const SizedBox(height: 10),
+        SmoothPageIndicator(
+          controller: _pageController,
+          count: lottieFiles.length,
+          effect: WormEffect(
+            dotColor: Colors.white30,
+            activeDotColor: Colors.white,
+            dotHeight: 8,
+            dotWidth: 8,
           ),
         ),
       ],
