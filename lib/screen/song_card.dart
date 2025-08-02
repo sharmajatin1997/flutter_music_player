@@ -3,12 +3,20 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:music_player/model/music_model.dart';
+import 'package:shimmer/shimmer.dart';
 
 class SongStackWidget extends StatelessWidget {
   final List<MusicModel> songs;
   final VoidCallback onNext;
+  final Color textColor,songGradiantColor1,songGradiantColor2;
 
-  const SongStackWidget({super.key, required this.songs, required this.onNext});
+  const SongStackWidget({super.key,
+    required this.songs,
+    required this.onNext,
+    required this.textColor,
+    required this.songGradiantColor1,
+    required this.songGradiantColor2,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +29,10 @@ class SongStackWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Up Next",
           style: TextStyle(
-            color: Colors.white,
+            color: textColor,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -43,6 +51,9 @@ class SongStackWidget extends StatelessWidget {
                 left: 0,
                 right: 0,
                 child: SongCard(
+                  textColor: textColor,
+                  songGradiantColor1: songGradiantColor1,
+                  songGradiantColor2: songGradiantColor2,
                   song: song,
                   onNext: isTopCard ? onNext : null,
                 ),
@@ -58,8 +69,16 @@ class SongStackWidget extends StatelessWidget {
 class SongCard extends StatelessWidget {
   final MusicModel song;
   final VoidCallback? onNext;
+  final Color textColor,songGradiantColor1,songGradiantColor2;
 
-  const SongCard({super.key, required this.song, this.onNext});
+  const SongCard({
+    super.key,
+    required this.song,
+    required this.textColor,
+    required this.songGradiantColor1,
+    required this.songGradiantColor2,
+    this.onNext
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -67,10 +86,10 @@ class SongCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient:  LinearGradient(
           colors: [
-            Color(0xFF8E2DE2),
-            Color(0xFFC18FF3),
+            songGradiantColor1,
+            songGradiantColor2,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -89,8 +108,8 @@ class SongCard extends StatelessWidget {
           Expanded(
             child: Text(
               song.title?? song.url.split("/").last,
-              style: const TextStyle(
-                color: Colors.white,
+              style:  TextStyle(
+                color: textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -111,4 +130,24 @@ class SongCard extends StatelessWidget {
       ),
     );
   }
+
+  // Widget _shimmerLine({double width = double.infinity, double height = 14}) {
+  //   return Align(
+  //     alignment: Alignment.centerLeft,
+  //     child: Shimmer.fromColors(
+  //       baseColor: widget.gradiant2!.withAlpha(77),
+  //       highlightColor: Colors.white.withAlpha(153),
+  //       child: Container(
+  //         width: width,
+  //         height: height,
+  //         margin: const EdgeInsets.symmetric(vertical: 4),
+  //         decoration: BoxDecoration(
+  //           color: Colors.white,
+  //           borderRadius: BorderRadius.circular(4),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
 }

@@ -3,16 +3,17 @@ import 'package:flutter/material.dart';
 
 class GradientProgressBar extends StatelessWidget {
   final double value;
-  final double bufferedValue;
   final Duration totalDuration;
   final Function(Duration position) onSeek;
+  final Color gradiant1,gradiant2;
 
   const GradientProgressBar({
     super.key,
     required this.value,
-    required this.bufferedValue,
     required this.totalDuration,
     required this.onSeek,
+    required this.gradiant1,
+    required this.gradiant2,
   });
 
   void _handleSeek(BuildContext context, double dx) {
@@ -34,22 +35,25 @@ class GradientProgressBar extends StatelessWidget {
         child: Container(
           height: 8,
           width: double.infinity,
-          color: const Color(0xff191558),
+          color: gradiant2,
           child: Stack(
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 alignment: Alignment.centerLeft,
-                width: MediaQuery.of(context).size.width * bufferedValue,
-                color: Colors.white.withOpacity(0.2),
+                width: MediaQuery.of(context).size.width ,
+                color: Colors.white.withAlpha(51),
               ),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 alignment: Alignment.centerLeft,
                 width: MediaQuery.of(context).size.width * value,
-                decoration: const BoxDecoration(
+                decoration:  BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xff191558), Color(0xff771DF8)],
+                    colors: [
+                      gradiant2,
+                      gradiant1
+                    ],
                   ),
                 ),
               ),
