@@ -1,4 +1,4 @@
-<h1 align="center">Flutter Music Player 🎵</h1>
+<h1 align="center">Flutter Music Player UI 🎵</h1>
 
 A Flutter package that helps you build beautiful animated "Searching Opponent" overlays for battle-style apps and games. Ideal for VS matchups, profile reveals, and real-time opponent searching UIs!
 

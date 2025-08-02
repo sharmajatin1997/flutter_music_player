@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:flutter_music_player/model/music_model.dart';
-import 'package:flutter_music_player/screen/gradient_progress_bar.dart';
-import 'package:flutter_music_player/screen/song_card.dart';
+import 'package:flutter_music_player_ui/model/music_model.dart';
+import 'package:flutter_music_player_ui/screen/gradient_progress_bar.dart';
+import 'package:flutter_music_player_ui/screen/song_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter_music_player/service/audio_services.dart';
+import 'package:flutter_music_player_ui/service/audio_services.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
@@ -390,7 +390,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               return Center(
                 child: Lottie.asset(
                   lottieFiles[index],
-                  package: 'music_player',
+                  package: 'flutter_music_player_ui',
                   repeat: _isPaused?false:true,
                   fit: BoxFit.contain,
                 ),
@@ -540,7 +540,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Lottie.asset(
-                          'assets/success_check.json',package: 'music_player',
+                          'assets/success_check.json',package: 'flutter_music_player_ui',
                           width: 100,
                           height: 100,
                           repeat: false,

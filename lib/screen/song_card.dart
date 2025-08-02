@@ -1,7 +1,7 @@
 // ✅ FIXED VERSION
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter_music_player/model/music_model.dart';
+import 'package:flutter_music_player_ui/model/music_model.dart';
 
 class SongStackWidget extends StatelessWidget {
   final List<MusicModel> songs;

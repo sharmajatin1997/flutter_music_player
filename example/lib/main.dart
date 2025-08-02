@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_music_player/model/music_model.dart';
-import 'package:flutter_music_player/screen/music_player_screen.dart';
+import 'package:flutter_music_player_ui/model/music_model.dart';
+import 'package:flutter_music_player_ui/screen/music_player_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -44,6 +44,8 @@ class _MyHomePageState extends State<MyHomePage> {
             MusicModel(url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", title: 'SoundHelix',description: 'SoundHelix Music'),
             ],
           initialIndex: 0,
+          showDownloadIcon: true,
+          repeat: true,
           showQueue: true, // Queue will be visible if list have more than 1 items other not showing
         ),
       ),
@@ -55,17 +57,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _onTap,
-        tooltip: 'Increment',
+        tooltip: 'Music Player',
         child: const Icon(Icons.play_arrow),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
