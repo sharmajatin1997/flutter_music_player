@@ -9,12 +9,19 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:music_player/service/audio_services.dart';
+// Add at the top of your file with other imports:
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 
 class MusicPlayerScreen extends StatefulWidget {
   final List<MusicModel> songs;
   final int initialIndex;
   final bool showQueue;
   final bool repeat;
+  final bool showDownloadIcon;
   final Color gradiant1,gradiant2, indicatorDotColor, indicatorActiveDotColor,titleColor,descriptionColor,iconColor,songGradiantColor1,songGradiantColor2;
 
   const MusicPlayerScreen({
@@ -23,6 +30,7 @@ class MusicPlayerScreen extends StatefulWidget {
     required this.initialIndex,
     this.showQueue = false,
     this.repeat = false,
+    this.showDownloadIcon = false,
     this.gradiant1=const Color(0xFF8E2DE2),
     this.gradiant2=const Color(0xFF4A00E0),
     this.indicatorDotColor=Colors.white30,
@@ -50,6 +58,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   late List<int> _playOrder;
 
   bool _isRepeat = false;
+
+  double _downloadProgress = 0.0;
+  bool _isDownloading = false;
+
 
   String get currentSong => widget.songs[_playOrder[_currentIndex]].url;
 
@@ -154,18 +166,31 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InkWell(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 45,
-                  height: 45,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0x4affffff),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 45,
+                      height: 45,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0x4affffff),
+                      ),
+                      child: Icon(Icons.arrow_back_ios_new, size: 20, color: widget.iconColor),
+                    ),
                   ),
-                  child:  Icon(Icons.arrow_back_ios_new, size: 20, color: widget.iconColor),
-                ),
+                  Visibility(
+                    visible: widget.showDownloadIcon,
+                    child: IconButton(
+                      icon: Icon(Icons.download_rounded, color: widget.iconColor),
+                      onPressed: _isLoading ? null : _downloadCurrentSong,
+                    ),
+                  ),
+                ],
               ),
+
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -416,4 +441,184 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       child:  Icon(icon, color: widget.iconColor, size: 30),
     );
   }
+
+  Future<void> _downloadCurrentSong() async {
+    final url = currentSong;
+    final title = widget.songs[_playOrder[_currentIndex]].title?.replaceAll(' ', '_') ??
+        'audio_${DateTime.now().millisecondsSinceEpoch}';
+
+    try {
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Storage permission denied')),
+          );
+          return;
+        }
+      }
+
+      final dir = await getDownloadDirectory();
+      if (dir == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to access storage')),
+        );
+        return;
+      }
+
+      final filePath = '${dir.path}/$title.mp3';
+      final dio = Dio();
+
+      _downloadProgress = 0.0;
+      _isDownloading = true;
+
+      StateSetter? setDialogState;
+
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => StatefulBuilder(
+            builder: (context, setState) {
+              setDialogState = setState;
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      colors: [widget.gradiant1, widget.gradiant2],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: _isDownloading
+                        ? Column(
+                      key: const ValueKey('progress'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.download_rounded, size: 40, color: Colors.white),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Downloading...",
+                          style: TextStyle(
+                            color: widget.titleColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        GradientProgressDownloadBar(
+                          value: _downloadProgress.clamp(0.0, 1.0),
+                          gradiant1: widget.gradiant1,
+                          gradiant2: widget.gradiant2,
+                          height: 8,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "${(_downloadProgress * 100).toStringAsFixed(0)}%",
+                          style: TextStyle(
+                            color: widget.descriptionColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    )
+                        : Column(
+                      key: const ValueKey('success'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Lottie.asset(
+                          'assets/success_check.json',package: 'music_player',
+                          width: 100,
+                          height: 100,
+                          repeat: false,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "Download Complete!",
+                          style: TextStyle(
+                            color: widget.titleColor,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      }
+
+      await dio.download(
+        url,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            _downloadProgress = received / total;
+            if (setDialogState != null) {
+              setDialogState!(() {}); // updates the dialog's UI
+            }
+          }
+        },
+      );
+
+      _isDownloading = false;
+      if (setDialogState != null) {
+        setDialogState!(() {}); // Trigger AnimatedSwitcher to show success
+      }
+
+      await Future.delayed(const Duration(seconds: 2)); // Allow Lottie to play
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Downloaded to: ${dir.path}')),
+        );
+      }
+    } catch (e) {
+      _isDownloading = false;
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('❌ Download failed')),
+        );
+      }
+      debugPrint("Download error: $e");
+    }
+  }
+
+
+  Future<Directory?> getDownloadDirectory() async {
+    if (Platform.isAndroid) {
+      // This points to the public Downloads folder on Android
+      final directory = Directory('/storage/emulated/0/Download');
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      return directory;
+    } else if (Platform.isIOS) {
+      return await getApplicationDocumentsDirectory();
+    } else {
+      return null;
+    }
+  }
+
+
 }

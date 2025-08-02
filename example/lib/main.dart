@@ -38,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
       MaterialPageRoute(
         builder: (context) => MusicPlayerScreen(
           songs: [
-            MusicModel(url: "https://onlinetestcase.com/wp-content/uploads/2023/06/500-KB-MP3.mp3", title: 'Tunes',description: 'Relax Music'),
+            MusicModel(url: "https://onlinetestcase.com/wp-content/uploads/2023/06/500-KB-MP3.mp3",description: 'Relax Music'),
             MusicModel(url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", title: 'SoundHelix'),
             MusicModel(url: "https://onlinetestcase.com/wp-content/uploads/2023/06/500-KB-MP3.mp3", title: 'Tunes',description: 'Relax Music'),
             MusicModel(url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", title: 'SoundHelix',description: 'SoundHelix Music'),

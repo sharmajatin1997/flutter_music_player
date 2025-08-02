@@ -64,3 +64,51 @@ class GradientProgressBar extends StatelessWidget {
     );
   }
 }
+
+class GradientProgressDownloadBar extends StatelessWidget {
+  final double value; // 0.0 to 1.0
+  final Color gradiant1;
+  final Color gradiant2;
+  final double height;
+  final BorderRadius borderRadius;
+
+  const GradientProgressDownloadBar({
+    super.key,
+    required this.value,
+    required this.gradiant1,
+    required this.gradiant2,
+    this.height = 6,
+    this.borderRadius = const BorderRadius.all(Radius.circular(8)),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300.withOpacity(0.5),
+        ),
+        child: Stack(
+          children: [
+            FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: value.clamp(0.0, 1.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [gradiant1, gradiant2],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -51,5 +51,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+    <string>We need access to save songs to your library.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Used to store downloaded songs.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app requires access to the local network for debugging.</string>
 </dict>
 </plist>
