@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:music_player/model/music_model.dart';
-import 'package:music_player/screen/music_player_screen.dart';
+import 'package:flutter_music_player/model/music_model.dart';
+import 'package:flutter_music_player/screen/music_player_screen.dart';
 
 void main() {
   runApp(const MyApp());

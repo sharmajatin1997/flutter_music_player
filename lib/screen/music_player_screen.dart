@@ -1,15 +1,13 @@
-// All your imports remain unchanged
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import 'package:music_player/model/music_model.dart';
-import 'package:music_player/screen/gradient_progress_bar.dart';
-import 'package:music_player/screen/song_card.dart';
+import 'package:flutter_music_player/model/music_model.dart';
+import 'package:flutter_music_player/screen/gradient_progress_bar.dart';
+import 'package:flutter_music_player/screen/song_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:music_player/service/audio_services.dart';
-// Add at the top of your file with other imports:
+import 'package:flutter_music_player/service/audio_services.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';

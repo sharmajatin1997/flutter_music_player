@@ -1,9 +1,7 @@
 // ✅ FIXED VERSION
-
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:music_player/model/music_model.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:flutter_music_player/model/music_model.dart';
 
 class SongStackWidget extends StatelessWidget {
   final List<MusicModel> songs;
@@ -130,24 +128,4 @@ class SongCard extends StatelessWidget {
       ),
     );
   }
-
-  // Widget _shimmerLine({double width = double.infinity, double height = 14}) {
-  //   return Align(
-  //     alignment: Alignment.centerLeft,
-  //     child: Shimmer.fromColors(
-  //       baseColor: widget.gradiant2!.withAlpha(77),
-  //       highlightColor: Colors.white.withAlpha(153),
-  //       child: Container(
-  //         width: width,
-  //         height: height,
-  //         margin: const EdgeInsets.symmetric(vertical: 4),
-  //         decoration: BoxDecoration(
-  //           color: Colors.white,
-  //           borderRadius: BorderRadius.circular(4),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
-
 }
