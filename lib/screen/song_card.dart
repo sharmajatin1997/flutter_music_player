@@ -6,9 +6,10 @@ import 'package:flutter_music_player_ui/model/music_model.dart';
 class SongStackWidget extends StatelessWidget {
   final List<MusicModel> songs;
   final VoidCallback onNext;
-  final Color textColor,songGradiantColor1,songGradiantColor2;
+  final Color textColor, songGradiantColor1, songGradiantColor2;
 
-  const SongStackWidget({super.key,
+  const SongStackWidget({
+    super.key,
     required this.songs,
     required this.onNext,
     required this.textColor,
@@ -67,7 +68,7 @@ class SongStackWidget extends StatelessWidget {
 class SongCard extends StatelessWidget {
   final MusicModel song;
   final VoidCallback? onNext;
-  final Color textColor,songGradiantColor1,songGradiantColor2;
+  final Color textColor, songGradiantColor1, songGradiantColor2;
 
   const SongCard({
     super.key,
@@ -75,7 +76,7 @@ class SongCard extends StatelessWidget {
     required this.textColor,
     required this.songGradiantColor1,
     required this.songGradiantColor2,
-    this.onNext
+    this.onNext,
   });
 
   @override
@@ -84,18 +85,15 @@ class SongCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.symmetric(horizontal: 0),
       decoration: BoxDecoration(
-        gradient:  LinearGradient(
-          colors: [
-            songGradiantColor1,
-            songGradiantColor2,
-          ],
+        gradient: LinearGradient(
+          colors: [songGradiantColor1, songGradiantColor2],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.4),
+            color: Colors.deepPurple.withAlpha(102),
             blurRadius: 20,
             offset: const Offset(0, 12),
           ),
@@ -105,8 +103,8 @@ class SongCard extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              song.title?? song.url.split("/").last,
-              style:  TextStyle(
+              song.title ?? song.url.split("/").last,
+              style: TextStyle(
                 color: textColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -123,7 +121,7 @@ class SongCard extends StatelessWidget {
               shape: const CircleBorder(),
             ),
             child: const Icon(Icons.skip_next),
-          )
+          ),
         ],
       ),
     );

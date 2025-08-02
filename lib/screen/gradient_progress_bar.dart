@@ -5,7 +5,7 @@ class GradientProgressBar extends StatelessWidget {
   final double value;
   final Duration totalDuration;
   final Function(Duration position) onSeek;
-  final Color gradiant1,gradiant2;
+  final Color gradiant1, gradiant2;
 
   const GradientProgressBar({
     super.key,
@@ -29,7 +29,8 @@ class GradientProgressBar extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (details) => _handleSeek(context, details.localPosition.dx),
-      onHorizontalDragUpdate: (details) => _handleSeek(context, details.localPosition.dx),
+      onHorizontalDragUpdate: (details) =>
+          _handleSeek(context, details.localPosition.dx),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Container(
@@ -41,20 +42,15 @@ class GradientProgressBar extends StatelessWidget {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 alignment: Alignment.centerLeft,
-                width: MediaQuery.of(context).size.width ,
+                width: MediaQuery.of(context).size.width,
                 color: Colors.white.withAlpha(51),
               ),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 alignment: Alignment.centerLeft,
                 width: MediaQuery.of(context).size.width * value,
-                decoration:  BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      gradiant2,
-                      gradiant1
-                    ],
-                  ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [gradiant2, gradiant1]),
                 ),
               ),
             ],
@@ -88,9 +84,7 @@ class GradientProgressDownloadBar extends StatelessWidget {
       child: Container(
         height: height,
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300.withOpacity(0.5),
-        ),
+        decoration: BoxDecoration(color: Colors.grey.shade300.withAlpha(128)),
         child: Stack(
           children: [
             FractionallySizedBox(

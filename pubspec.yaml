@@ -3,7 +3,7 @@ description: "A customizable Flutter music player screen with rich UI and advanc
   Designed with elegant gradient theming, buffered progress indication, and smooth audio playback using the audioplayers package."
 version: 0.0.1
 repository: https://github.com/sharmajatin1997/flutter_music_player_ui
-homepage: https://github.com/sharmajatin1997/flutter_music_player_ui
+homepage: https://github.com/sharmajatin1997/flutter_music_player_ui/blob/main/example/lib/main.dart
 issue_tracker: https://github.com/sharmajatin1997/flutter_music_player_ui/issues
 publish_to: "https://pub.dev"
 

@@ -5,11 +5,13 @@ class AudioPlayerService {
 
   Stream<Duration> get onPositionChanged => _audioPlayer.onPositionChanged;
   Stream<Duration> get onDurationChanged => _audioPlayer.onDurationChanged;
-  Stream<PlayerState> get onPlayerStateChanged => _audioPlayer.onPlayerStateChanged;
+  Stream<PlayerState> get onPlayerStateChanged =>
+      _audioPlayer.onPlayerStateChanged;
 
   // ✅ Add this line for auto-play on completion
-  Stream<void> get onPlayerComplete =>
-      _audioPlayer.onPlayerStateChanged.where((state) => state == PlayerState.completed).map((_) => null);
+  Stream<void> get onPlayerComplete => _audioPlayer.onPlayerStateChanged
+      .where((state) => state == PlayerState.completed)
+      .map((_) {});
 
   Future<void> play(String url) async {
     await _audioPlayer.play(UrlSource(url));
