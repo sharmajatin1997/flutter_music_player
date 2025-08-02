@@ -1,3 +1,4 @@
+// All your imports remain unchanged
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:music_player/model/music_model.dart';
@@ -13,8 +14,15 @@ class MusicPlayerScreen extends StatefulWidget {
   final List<MusicModel> songs;
   final int initialIndex;
   final bool showQueue;
+  final bool repeat;
 
-  const MusicPlayerScreen({super.key, required this.songs, required this.initialIndex,this.showQueue=false});
+  const MusicPlayerScreen({
+    super.key,
+    required this.songs,
+    required this.initialIndex,
+    this.showQueue = false,
+    this.repeat = false,
+  });
 
   @override
   State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
@@ -30,13 +38,30 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   Duration _bufferedPosition = Duration.zero;
   int _currentIndex = 0;
   final PageController _pageController = PageController();
+  late List<int> _playOrder;
 
-  String get currentSong => widget.songs[_currentIndex].url;
+  bool _isRepeat = false;
+  bool _isShuffle = false;
+
+  String get currentSong => widget.songs[_playOrder[_currentIndex]].url;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _isRepeat = widget.repeat;
+    _playOrder = List.generate(widget.songs.length, (i) => i);
+    if (_isShuffle) {
+      _playOrder.shuffle();
+      final initIndex = _playOrder.indexOf(widget.initialIndex);
+      if (initIndex != 0) {
+        final temp = _playOrder[0];
+        _playOrder[0] = widget.initialIndex;
+        _playOrder[initIndex] = temp;
+      }
+      _currentIndex = 0;
+    } else {
+      _currentIndex = widget.initialIndex;
+    }
 
     VolumeController.instance.showSystemUI = false;
     VolumeController.instance.addListener((v) => setState(() => _volume = v));
@@ -52,12 +77,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       setState(() => _duration = dur);
     });
 
-    // 👉 Auto play next track on completion
     _audioService.onPlayerComplete.listen((_) {
-      if (_currentIndex < widget.songs.length - 1) {
+      if (_currentIndex < _playOrder.length - 1 || _isRepeat) {
         _playNext();
       } else {
-        // Optionally reset or stop on last track
         _audioService.stop();
       }
     });
@@ -81,11 +104,17 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
   void _playNext() {
-    if (_currentIndex < widget.songs.length - 1) {
+    if (_currentIndex < _playOrder.length - 1) {
       _currentIndex++;
-      _isPaused = false;
-      _setupAudio();
+    } else if (_isRepeat) {
+      if (_isShuffle) _playOrder.shuffle();
+      _currentIndex = 0;
+    } else {
+      return;
     }
+
+    _isPaused = false;
+    _setupAudio();
   }
 
   void _playPrevious() {
@@ -102,6 +131,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return "$minutes:$seconds";
   }
+
+  final List<String> lottieFiles = [
+    'assets/disk.json',
+    'assets/headphone.json',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -124,148 +158,176 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20,vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               InkWell(
-                onTap: (){
-                  Navigator.pop(context);
-                },
+                onTap: () => Navigator.pop(context),
                 child: Container(
                   width: 45,
                   height: 45,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Color(0x4affffff),
                   ),
-                  child: Icon(Icons.arrow_back_ios_new, size: 20,color: Colors.white,),
+                  child: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.white),
                 ),
               ),
-               SizedBox(height: widget.showQueue?10:25),
-              _buildHeaderArtwork(),
-              SizedBox(height: widget.showQueue?15:20),
-              _isLoading
-                  ? _shimmerLine(width: 220, height: 16)
-                  : Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                    widget.songs[_currentIndex].title??currentSong.split("/").last,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                ),
-              ),
-              SizedBox(height: widget.showQueue?4:8),
-              _isLoading
-                  ? _shimmerLine(width: 120, height: 12)
-                  : Visibility(
-                    visible: widget.songs[_currentIndex].description?.isNotEmpty==true,
-                    child: const Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                    'Relaxing music',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Color(0xffCECECE), fontSize: 10, fontWeight: FontWeight.w600),
-                                    ),
-                                  ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: widget.showQueue ? 20 : 25),
+                      _buildHeaderArtwork(),
+                      SizedBox(height: widget.showQueue ? 15 : 20),
+                      _isLoading
+                          ? _shimmerLine(width: 220, height: 16)
+                          : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.songs[_playOrder[_currentIndex]].title ??
+                              currentSong.split("/").last,
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      SizedBox(height: widget.showQueue ? 4 : 8),
+                      _isLoading
+                          ? _shimmerLine(width: 120, height: 12)
+                          : Visibility(
+                        visible: widget.songs[_playOrder[_currentIndex]].description?.isNotEmpty == true,
+                        child: const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Relaxing music',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Color(0xffCECECE), fontSize: 10, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: widget.showQueue ? 24 : 30),
+                      _isLoading
+                          ? _shimmerLine(height: 10)
+                          : GradientProgressBar(
+                        value: progress.clamp(0.0, 1.0),
+                        bufferedValue: buffered.clamp(0.0, 1.0),
+                        totalDuration: _duration,
+                        onSeek: (position) => _audioService.seek(position),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _isLoading
+                              ? _shimmerLine(width: 40, height: 10)
+                              : Text(formatDuration(_position), style: const TextStyle(color: Color(0xffCECECE), fontSize: 10)),
+                          _isLoading
+                              ? _shimmerLine(width: 40, height: 10)
+                              : Text(formatDuration(_duration), style: const TextStyle(color: Color(0xffCECECE), fontSize: 10)),
+                        ],
+                      ),
+                      SizedBox(height: widget.showQueue ? 15 : 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: _isLoading
+                                ? _shimmerIcon(Icons.repeat):Icon(
+                              Icons.repeat,
+                              color: _isRepeat ? Colors.pinkAccent : Colors.white70,
+                              size: 24,
+                            ),
+                            onPressed: _isLoading? null :() {
+                              setState(() => _isRepeat = !_isRepeat);
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            onPressed: _isLoading || _currentIndex == 0 ? null : _playPrevious,
+                            icon: _isLoading
+                                ? _shimmerIcon(Icons.skip_previous)
+                                : Icon(Icons.skip_previous, color: _currentIndex == 0 ? Colors.white38 : Colors.white, size: 30),
+                          ),
+                          const SizedBox(width: 16),
+                          StreamBuilder<PlayerState>(
+                            stream: _audioService.onPlayerStateChanged,
+                            builder: (context, snapshot) {
+                              final isPlaying = snapshot.data == PlayerState.playing;
+                              final icon = Icon(
+                                isPlaying ? Icons.pause : Icons.play_arrow,
+                                color: Colors.white,
+                                size: 30,
+                              );
+                              return IconButton(
+                                icon: _isLoading ? _shimmerIcon(isPlaying ? Icons.pause : Icons.play_arrow,) : icon,
+                                onPressed: _isLoading
+                                    ? null
+                                    : () {
+                                  if (isPlaying) {
+                                    _isPaused = true;
+                                    _audioService.pause();
+                                  } else {
+                                    _isPaused ? _audioService.resume() : _setupAudio();
+                                    _isPaused = false;
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            onPressed: _isLoading || (!_isRepeat && _currentIndex == _playOrder.length - 1)
+                                ? null
+                                : _playNext,
+                            icon: _isLoading
+                                ? _shimmerIcon(Icons.skip_next)
+                                : Icon(
+                              Icons.skip_next,
+                              color: (!_isRepeat && _currentIndex == _playOrder.length - 1)
+                                  ? Colors.white38
+                                  : Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                          const SizedBox(width: 40),
+                        ],
+                      ),
+                      SizedBox(height: widget.showQueue ? 15 : 20),
+                      Row(
+                        children: [
+                          const Icon(Icons.volume_down, color: Colors.white, size: 30),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Slider(
+                              value: _volume,
+                              min: 0,
+                              max: 1,
+                              activeColor: Colors.pinkAccent,
+                              onChanged: _isLoading
+                                  ? null
+                                  : (value) async {
+                                _volume = value;
+                                await VolumeController.instance.setVolume(value);
+                                _audioService.setVolume(value);
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.volume_up, color: Colors.white, size: 30),
+                        ],
+                      ),
+                      // 🔽 Queue
+                      Visibility(
+                        visible: widget.showQueue,
+                        child: SongStackWidget(
+                          songs: _playOrder.sublist(_currentIndex).map((i) => widget.songs[i]).toList(),
+                          onNext: _playNext,
+                        ),
+                      ),
+                    ],
                   ),
-              SizedBox(height: widget.showQueue?24:30),
-              _isLoading
-                  ? _shimmerLine(height: 10)
-                  : GradientProgressBar(
-                value: progress.clamp(0.0, 1.0),
-                bufferedValue: buffered.clamp(0.0, 1.0),
-                totalDuration: _duration,
-                onSeek: (position) => _audioService.seek(position),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _isLoading
-                      ? _shimmerLine(width: 40, height: 10)
-                      : Text(formatDuration(_position), style: const TextStyle(color: Color(0xffCECECE), fontSize: 10)),
-                  _isLoading
-                      ? _shimmerLine(width: 40, height: 10)
-                      : Text(formatDuration(_duration), style: const TextStyle(color: Color(0xffCECECE), fontSize: 10)),
-                ],
-              ),
-              SizedBox(height: widget.showQueue?15:20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: _isLoading || _currentIndex == 0 ? null : _playPrevious,
-                    icon: _isLoading
-                        ? _shimmerIcon()
-                        : Icon(Icons.skip_previous, color: _currentIndex == 0 ? Colors.white38 :Colors.white, size: 30),
-                  ),
-                  const SizedBox(width: 16),
-                  StreamBuilder<PlayerState>(
-                    stream: _audioService.onPlayerStateChanged,
-                    builder: (context, snapshot) {
-                      final isPlaying = snapshot.data == PlayerState.playing;
-                      final icon = Icon(
-                        isPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                        size: 30,
-                      );
-
-                      return IconButton(
-                        icon: _isLoading ? _shimmerIcon() : icon,
-                        onPressed: _isLoading
-                            ? null
-                            : () {
-                          if (isPlaying) {
-                            _isPaused = true;
-                            _audioService.pause();
-                          } else {
-                            _isPaused ? _audioService.resume() : _setupAudio();
-                            _isPaused = false;
-                          }
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    onPressed: _isLoading || _currentIndex == widget.songs.length - 1 ? null : _playNext,
-                    icon: _isLoading
-                        ? _shimmerIcon()
-                        : Icon(Icons.skip_next, color: _currentIndex == widget.songs.length - 1 ? Colors.white38 : Colors.white, size: 30),
-                  ),
-                ],
-              ),
-              SizedBox(height: widget.showQueue?10:20),
-              Row(
-                children: [
-                  const Icon(Icons.volume_down, color: Colors.white, size: 30),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Slider(
-                      value: _volume,
-                      min: 0,
-                      max: 1,
-                      activeColor: Colors.pinkAccent,
-                      onChanged: _isLoading
-                          ? null
-                          : (value) async {
-                        _volume = value;
-                        await VolumeController.instance.setVolume(value);
-                        _audioService.setVolume(value);
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.volume_up, color: Colors.white, size: 30),
-                ],
-              ),
-              Visibility(
-                visible: widget.showQueue,
-                child: SongStackWidget(
-                  songs: widget.songs.sublist(_currentIndex), // e.g. widget.songs.sublist(currentIndex),
-                  onNext: _playNext, // your existing next handler
                 ),
               ),
             ],
@@ -274,11 +336,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       ),
     );
   }
-
-  final List<String> lottieFiles = [
-    'assets/disk.json',
-    'assets/headphone.json',
-  ];
 
   Widget _buildHeaderArtwork() {
     return _isLoading
@@ -356,14 +413,11 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
-  Widget _shimmerIcon() {
+  Widget _shimmerIcon(IconData? icon) {
     return Shimmer.fromColors(
       baseColor: const Color(0xFF4A00E0).withAlpha(77),
       highlightColor: Colors.white.withAlpha(153),
-      child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
+      child:  Icon(icon, color: Colors.white, size: 30),
     );
   }
 }
-
-
-

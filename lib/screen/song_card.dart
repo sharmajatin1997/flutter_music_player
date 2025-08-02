@@ -21,7 +21,6 @@ class SongStackWidget extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
         const Text(
           "Up Next",
           style: TextStyle(
@@ -70,7 +69,6 @@ class SongCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-
             Color(0xFF8E2DE2),
             Color(0xFFC18FF3),
           ],
