@@ -1,11 +1,11 @@
-<h1 align="center">Music Player 🎵</h1>
+<h1 align="center">Flutter Music Player 🎵</h1>
 
 A Flutter package that helps you build beautiful animated "Searching Opponent" overlays for battle-style apps and games. Ideal for VS matchups, profile reveals, and real-time opponent searching UIs!
 
-[![GitHub Stars](https://img.shields.io/github/stars/sharmajatin1997/music_player?style=social)](https://github.com/sharmajatin1997/music_player)
-[![Pub Version](https://img.shields.io/pub/v/music_player.svg)](https://pub.dev/packages/music_player)
-[![GitHub Issues](https://img.shields.io/github/issues/sharmajatin1997/music_player)](https://github.com/sharmajatin1997/music_player/issues)
-[![License](https://img.shields.io/github/license/sharmajatin1997/music_player)](https://github.com/sharmajatin1997/music_player/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/sharmajatin1997/flutter_music_player?style=social)](https://github.com/sharmajatin1997/flutter_music_player)
+[![Pub Version](https://img.shields.io/pub/v/music_player.svg)](https://pub.dev/packages/flutter_music_player)
+[![GitHub Issues](https://img.shields.io/github/issues/sharmajatin1997/flutter_music_player)](https://github.com/sharmajatin1997/flutter_music_player/issues)
+[![License](https://img.shields.io/github/license/sharmajatin1997/flutter_music_player)](https://github.com/sharmajatin1997/flutter_music_player/blob/main/LICENSE)
 
 A beautifully designed, customizable Flutter music player...
 
