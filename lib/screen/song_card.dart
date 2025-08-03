@@ -1,13 +1,32 @@
-// ✅ FIXED VERSION
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
 
+/// A widget that displays a stacked list of upcoming songs below the current one.
+///
+/// It shows a maximum of 3 queued songs (excluding the currently playing one),
+/// with a stacked card appearance. The topmost card has a "Next" button.
+///
+/// Typically used within the [MusicPlayerScreen] to show "Up Next" queue.
 class SongStackWidget extends StatelessWidget {
+  /// The list of songs in the queue.
+  ///
+  /// The first song is assumed to be currently playing and will not be shown in the stack.
   final List<MusicModel> songs;
-  final VoidCallback onNext;
-  final Color textColor, songGradiantColor1, songGradiantColor2;
 
+  /// Callback triggered when the topmost card's "Next" button is pressed.
+  final VoidCallback onNext;
+
+  /// Text color used in each stacked card.
+  final Color textColor;
+
+  /// Gradient start color for song cards.
+  final Color songGradiantColor1;
+
+  /// Gradient end color for song cards.
+  final Color songGradiantColor2;
+
+  /// Creates a widget that displays the upcoming songs in a stacked format.
   const SongStackWidget({
     super.key,
     required this.songs,
@@ -65,11 +84,27 @@ class SongStackWidget extends StatelessWidget {
   }
 }
 
-class SongCard extends StatelessWidget {
-  final MusicModel song;
-  final VoidCallback? onNext;
-  final Color textColor, songGradiantColor1, songGradiantColor2;
 
+/// A single card representing a song in the "Up Next" queue.
+///
+/// Displays the song title and an optional "Next" button when [onNext] is provided.
+class SongCard extends StatelessWidget {
+  /// The music track displayed in the card.
+  final MusicModel song;
+
+  /// Optional callback triggered when the "Next" button is pressed.
+  final VoidCallback? onNext;
+
+  /// Color used for the text (title).
+  final Color textColor;
+
+  /// Gradient start color of the card background.
+  final Color songGradiantColor1;
+
+  /// Gradient end color of the card background.
+  final Color songGradiantColor2;
+
+  /// Creates a [SongCard] with title and optional skip button.
   const SongCard({
     super.key,
     required this.song,
@@ -116,7 +151,7 @@ class SongCard extends StatelessWidget {
           ElevatedButton(
             onPressed: onNext,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF4A00E0),
+              backgroundColor: const Color(0xFF4A00E0),
               foregroundColor: Colors.white,
               shape: const CircleBorder(),
             ),
@@ -127,3 +162,4 @@ class SongCard extends StatelessWidget {
     );
   }
 }
+

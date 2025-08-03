@@ -13,22 +13,56 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+/// A full-featured, customizable music player UI screen for Flutter.
+///
+/// Supports audio playback, seek bar, volume control, repeat mode,
+/// shimmer loading, Lottie animations, song queue, and download with progress.
+///
+/// Part of the `flutter_music_player_ui` package.
 class MusicPlayerScreen extends StatefulWidget {
+  /// List of music tracks to be played.
   final List<MusicModel> songs;
-  final int initialIndex;
-  final bool showQueue;
-  final bool repeat;
-  final bool showDownloadIcon;
-  final Color gradiant1,
-      gradiant2,
-      indicatorDotColor,
-      indicatorActiveDotColor,
-      titleColor,
-      descriptionColor,
-      iconColor,
-      songGradiantColor1,
-      songGradiantColor2;
 
+  /// The index of the initially selected track.
+  final int initialIndex;
+
+  /// Whether to display the song queue at the bottom.
+  final bool showQueue;
+
+  /// Whether repeat mode is enabled by default.
+  final bool repeat;
+
+  /// Whether to show the download icon.
+  final bool showDownloadIcon;
+
+  /// Gradient color 1 for background and progress bar.
+  final Color gradiant1;
+
+  /// Gradient color 2 for background and progress bar.
+  final Color gradiant2;
+
+  /// Color for inactive dots in the page indicator.
+  final Color indicatorDotColor;
+
+  /// Color for the active dot in the page indicator.
+  final Color indicatorActiveDotColor;
+
+  /// Color for all icons.
+  final Color iconColor;
+
+  /// Color for the song title.
+  final Color titleColor;
+
+  /// Color for the song description text.
+  final Color descriptionColor;
+
+  /// Gradient start color for the song card widget.
+  final Color songGradiantColor1;
+
+  /// Gradient end color for the song card widget.
+  final Color songGradiantColor2;
+
+  /// Creates a [MusicPlayerScreen] with all UI and playback options.
   const MusicPlayerScreen({
     super.key,
     required this.songs,
@@ -100,7 +134,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       }
     });
   }
-
+  /// Sets up the audio player and begins playing the selected song.
   Future<void> _setupAudio() async {
     setState(() {
       _isLoading = true;
@@ -118,6 +152,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     super.dispose();
   }
 
+  /// Plays the next song in the list. Respects repeat mode.
   void _playNext() {
     if (_currentIndex < _playOrder.length - 1) {
       _currentIndex++;
@@ -131,6 +166,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     _setupAudio();
   }
 
+  /// Plays the previous song if available.
   void _playPrevious() {
     if (_currentIndex > 0) {
       _currentIndex--;
@@ -139,6 +175,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
+  /// Formats a [Duration] into mm:ss format.
   String formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final minutes = twoDigits(duration.inMinutes.remainder(60));
@@ -445,6 +482,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
+  /// Builds the animated Lottie artwork and page indicator.
   Widget _buildHeaderArtwork() {
     return _isLoading
         ? Shimmer.fromColors(
@@ -502,6 +540,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           );
   }
 
+  /// Returns a shimmer line placeholder used during loading.
   Widget _shimmerLine({double width = double.infinity, double height = 14}) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -521,6 +560,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
+  /// Returns a shimmer icon placeholder used during loading.
   Widget _shimmerIcon(IconData? icon) {
     return Shimmer.fromColors(
       baseColor: widget.gradiant2.withAlpha(77),
@@ -529,6 +569,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
+  /// Downloads the currently playing song and shows a progress dialog.
   Future<void> _downloadCurrentSong(BuildContext context) async {
     final url = currentSong;
     final title =
@@ -699,6 +740,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
+  /// Returns the appropriate download directory for the platform.
   Future<Directory?> getDownloadDirectory() async {
     if (Platform.isAndroid) {
       // This points to the public Downloads folder on Android
