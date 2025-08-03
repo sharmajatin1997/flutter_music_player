@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_music_player_ui/flutter_music_player.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
-import 'package:flutter_music_player_ui/screen/music_player_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +32,9 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
+  final isBackGroundMusic=true;
+
   void _onTap() {
     Navigator.push(
       context,
@@ -64,8 +67,8 @@ class _MyHomePageState extends State<MyHomePage> {
           initialIndex: 0,
           showDownloadIcon: true,
           repeat: true,
-          showQueue:
-              true, // Queue will be visible if list have more than 1 items other not showing
+          isBackMusic: isBackGroundMusic,
+          showQueue: true, // Queue will be visible if list have more than 1 items other not showing
         ),
       ),
     );
@@ -83,6 +86,13 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Music Player',
         child: const Icon(Icons.play_arrow),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: Stack(
+        children: [
+          Visibility(
+            visible: isBackGroundMusic,
+              child: MiniPlayerWidget())
+        ],
+      ),
     );
   }
 }

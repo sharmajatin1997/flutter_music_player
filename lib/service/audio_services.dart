@@ -1,13 +1,30 @@
+import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 
-/// A service class that wraps the [AudioPlayer] from the `audioplayers` package
-/// and provides common audio playback functionalities.
-///
-/// This class exposes reactive streams for tracking playback position,
-/// duration, and player state. It also provides methods for playing,
-/// pausing, resuming, seeking, and stopping audio playback.
+/// Singleton service class for managing audio playback with metadata.
 class AudioPlayerService {
+  static final AudioPlayerService _instance = AudioPlayerService._internal();
+
+  factory AudioPlayerService() => _instance;
+
+  AudioPlayerService._internal();
+
   final AudioPlayer _audioPlayer = AudioPlayer();
+
+  String? _currentUrl;
+  String? _currentTitle;
+
+  final StreamController<String?> _titleController =
+  StreamController<String?>.broadcast();
+
+  /// Stream of current title changes (for reactive UI).
+  Stream<String?> get currentTitleStream => _titleController.stream;
+
+  /// Current audio URL being played.
+  String? get currentUrl => _currentUrl;
+
+  /// Current title of the song.
+  String? get currentTitle => _currentTitle;
 
   /// Emits updates when the audio playback position changes.
   Stream<Duration> get onPositionChanged => _audioPlayer.onPositionChanged;
@@ -16,55 +33,45 @@ class AudioPlayerService {
   Stream<Duration> get onDurationChanged => _audioPlayer.onDurationChanged;
 
   /// Emits the current state of the audio player (playing, paused, stopped, etc.).
-  Stream<PlayerState> get onPlayerStateChanged =>
-      _audioPlayer.onPlayerStateChanged;
+  Stream<PlayerState> get onPlayerStateChanged => _audioPlayer.onPlayerStateChanged;
 
   /// Emits an event when audio playback completes.
-  ///
-  /// This stream filters the [onPlayerStateChanged] stream for the
-  /// [PlayerState.completed] event.
   Stream<void> get onPlayerComplete => _audioPlayer.onPlayerStateChanged
       .where((state) => state == PlayerState.completed)
       .map((_) {});
 
-  /// Plays the audio from the provided [url].
-  ///
-  /// The URL must point to a valid audio source.
-  Future<void> play(String url) async {
+  /// Plays the audio from the provided [url] with an optional [title].
+  Future<void> play(String url, {String? title}) async {
+    _currentUrl = url;
+    _currentTitle = title;
+    _titleController.add(title);
     await _audioPlayer.play(UrlSource(url));
   }
 
   /// Pauses the currently playing audio.
-  Future<void> pause() async {
-    await _audioPlayer.pause();
-  }
+  Future<void> pause() async => _audioPlayer.pause();
 
   /// Resumes audio playback if it was paused.
-  Future<void> resume() async {
-    await _audioPlayer.resume();
-  }
+  Future<void> resume() async => _audioPlayer.resume();
 
   /// Seeks the audio to a specific [position].
-  Future<void> seek(Duration position) async {
-    await _audioPlayer.seek(position);
-  }
+  Future<void> seek(Duration position) async => _audioPlayer.seek(position);
 
-  /// Stops the audio playback completely.
+  /// Stops the audio playback and clears metadata.
   Future<void> stop() async {
     await _audioPlayer.stop();
+    _currentUrl = null;
+    _currentTitle = null;
+    _titleController.add(null);
   }
 
-  /// Sets the audio volume.
-  ///
-  /// The [volume] should be between 0.0 (mute) and 1.0 (full volume).
-  Future<void> setVolume(double volume) async {
-    await _audioPlayer.setVolume(volume);
-  }
+  /// Sets the audio volume (0.0 to 1.0).
+  Future<void> setVolume(double volume) async =>
+      _audioPlayer.setVolume(volume);
 
   /// Releases resources used by the audio player.
-  ///
-  /// This should be called when the player is no longer needed.
   void dispose() {
+    _titleController.close();
     _audioPlayer.dispose();
   }
 }

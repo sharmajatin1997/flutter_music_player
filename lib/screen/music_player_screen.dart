@@ -62,6 +62,8 @@ class MusicPlayerScreen extends StatefulWidget {
   /// Gradient end color for the song card widget.
   final Color songGradiantColor2;
 
+  final bool isBackMusic;
+
   /// Creates a [MusicPlayerScreen] with all UI and playback options.
   const MusicPlayerScreen({
     super.key,
@@ -79,6 +81,7 @@ class MusicPlayerScreen extends StatefulWidget {
     this.descriptionColor = const Color(0xffCECECE),
     this.songGradiantColor1 = const Color(0xFF8E2DE2),
     this.songGradiantColor2 = const Color(0xFFC18FF3),
+    this.isBackMusic = false,
   });
 
   @override
@@ -148,8 +151,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   @override
   void dispose() {
-    _audioService.stop();
-    _audioService.dispose();
+    if (!widget.isBackMusic) {
+      stopMusic();
+    }
     super.dispose();
   }
 
@@ -755,5 +759,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     } else {
       return null;
     }
+  }
+
+  void stopMusic() async{
+    await _audioService.stop();
   }
 }
