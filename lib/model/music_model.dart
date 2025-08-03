@@ -12,9 +12,10 @@ class MusicModel {
 
   /// A short description or metadata about the track (optional).
   final String? description;
+  final int? progress;
 
   /// Creates a new [MusicModel] instance.
   ///
   /// The [url] is required and must not be null.
-  MusicModel({required this.url, this.title, this.description});
+  MusicModel({required this.url, this.title, this.description, this.progress});
 }

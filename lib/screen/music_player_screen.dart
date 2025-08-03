@@ -13,6 +13,8 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../service/global_model_notifier.dart';
+
 /// A full-featured, customizable music player UI screen for Flutter.
 ///
 /// Supports audio playback, seek bar, volume control, repeat mode,
@@ -104,6 +106,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   double _downloadProgress = 0.0;
   bool _isDownloading = false;
 
+  MusicModel get currentSongModel => widget.songs[_playOrder[_currentIndex]];
+
   String get currentSong => widget.songs[_playOrder[_currentIndex]].url;
 
   @override
@@ -123,10 +127,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
     _audioService.onPositionChanged.listen((pos) {
       setState(() => _position = pos);
+      // call here
+      updateCurrentSong();
     });
 
     _audioService.onDurationChanged.listen((dur) {
       setState(() => _duration = dur);
+      // call here
+      updateCurrentSong();
     });
 
     _audioService.onPlayerComplete.listen((_) {
@@ -135,7 +143,13 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       } else {
         _audioService.stop();
       }
+      // call here
+      updateCurrentSong();
     });
+  }
+
+  void updateCurrentSong() {
+    GlobalModelNotifier.currentSongNotifier.value = currentSongModel;
   }
 
   /// Sets up the audio player and begins playing the selected song.
@@ -285,9 +299,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  widget
-                                          .songs[_playOrder[_currentIndex]]
-                                          .description ??
+                                  widget.songs[_playOrder[_currentIndex]].description ??
                                       '',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -307,8 +319,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                               totalDuration: _duration,
                               gradiant1: widget.gradiant1,
                               gradiant2: widget.gradiant2,
-                              onSeek: (position) =>
-                                  _audioService.seek(position),
+                              onSeek: (position) {
+                                _audioService.seek(position);
+                              },
                             ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
