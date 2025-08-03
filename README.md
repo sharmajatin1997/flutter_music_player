@@ -4,7 +4,7 @@ A beautifully designed, customizable Flutter music player widget with rich featu
 
 
 [![GitHub Stars](https://img.shields.io/github/stars/sharmajatin1997/flutter_music_player_ui?style=social)](https://github.com/sharmajatin1997/flutter_music_player_ui)
-[![Pub Version](https://img.shields.io/pub/v/music_player.svg)](https://pub.dev/packages/flutter_music_player_ui)
+[![Pub Version](https://img.shields.io/pub/v/flutter_music_player_ui.svg)](https://pub.dev/packages/flutter_music_player_ui)
 [![GitHub Issues](https://img.shields.io/github/issues/sharmajatin1997/flutter_music_player_ui)](https://github.com/sharmajatin1997/flutter_music_player_ui/issues)
 [![License](https://img.shields.io/github/license/sharmajatin1997/flutter_music_player_ui)](https://github.com/sharmajatin1997/flutter_music_player_ui/blob/main/LICENSE)
 
