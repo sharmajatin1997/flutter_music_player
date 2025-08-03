@@ -16,9 +16,5 @@ class MusicModel {
   /// Creates a new [MusicModel] instance.
   ///
   /// The [url] is required and must not be null.
-  MusicModel({
-    required this.url,
-    this.title,
-    this.description,
-  });
+  MusicModel({required this.url, this.title, this.description});
 }

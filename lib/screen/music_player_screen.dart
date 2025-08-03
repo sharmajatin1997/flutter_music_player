@@ -134,6 +134,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       }
     });
   }
+
   /// Sets up the audio player and begins playing the selected song.
   Future<void> _setupAudio() async {
     setState(() {

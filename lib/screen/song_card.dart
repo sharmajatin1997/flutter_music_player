@@ -84,7 +84,6 @@ class SongStackWidget extends StatelessWidget {
   }
 }
 
-
 /// A single card representing a song in the "Up Next" queue.
 ///
 /// Displays the song title and an optional "Next" button when [onNext] is provided.
@@ -162,4 +161,3 @@ class SongCard extends StatelessWidget {
     );
   }
 }
-
