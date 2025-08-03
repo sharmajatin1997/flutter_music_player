@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.0.2
 
-* TODO: Describe initial release.
+* 🎵 A customizable Flutter music player UI with elegant gradients, Lottie animations, shimmer loading, download support, volume control, repeat, and song queue — powered by audioplayers.

@@ -1,7 +1,6 @@
 name: flutter_music_player_ui
-description: "A customizable Flutter music player screen with rich UI and advanced features like Lottie animations, shimmer loading effects, downloadable audio, volume control, repeat mode, and song queue visualization. 
-  Designed with elegant gradient theming, buffered progress indication, and smooth audio playback using the audioplayers package."
-version: 0.0.1
+description: "🎵 A customizable Flutter music player UI with elegant gradients, Lottie animations, shimmer loading, download support, volume control, repeat, and song queue — powered by audioplayers."
+version: 0.0.2
 repository: https://github.com/sharmajatin1997/flutter_music_player_ui
 homepage: https://github.com/sharmajatin1997/flutter_music_player_ui/blob/main/example/lib/main.dart
 issue_tracker: https://github.com/sharmajatin1997/flutter_music_player_ui/issues
