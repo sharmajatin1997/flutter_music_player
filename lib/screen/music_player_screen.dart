@@ -124,19 +124,19 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
 
     _setupAudio();
-
+    if (!mounted) return;
     _audioService.onPositionChanged.listen((pos) {
       setState(() => _position = pos);
       // call here
       updateCurrentSong();
     });
-
+    if (!mounted) return;
     _audioService.onDurationChanged.listen((dur) {
       setState(() => _duration = dur);
       // call here
       updateCurrentSong();
     });
-
+    if (!mounted) return;
     _audioService.onPlayerComplete.listen((_) {
       if (_currentIndex < _playOrder.length - 1 || _isRepeat) {
         _playNext();

@@ -52,7 +52,7 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
     return Material(
       elevation: 10,
       borderRadius: BorderRadius.circular(50),
-      color: Colors.purple.shade600.withOpacity(0.95),
+      color: Colors.purple.shade600.withAlpha(242),
       child: Container(
         width: 240,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
