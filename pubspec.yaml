@@ -5,7 +5,6 @@ version: 0.0.1
 repository: https://github.com/sharmajatin1997/flutter_music_player_ui
 homepage: https://github.com/sharmajatin1997/flutter_music_player_ui/blob/main/example/lib/main.dart
 issue_tracker: https://github.com/sharmajatin1997/flutter_music_player_ui/issues
-publish_to: "https://pub.dev"
 
 environment:
   sdk: ^3.8.1
