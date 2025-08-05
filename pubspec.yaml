@@ -12,8 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  audioplayers: ^6.5.0
-  volume_controller: ^3.4.0
+  just_audio: ^0.10.4
   shimmer: ^3.0.0
   lottie: ^3.3.1
   smooth_page_indicator: ^1.2.1

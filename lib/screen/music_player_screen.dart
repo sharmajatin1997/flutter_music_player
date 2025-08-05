@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_music_player_ui/service/mini_player_controller.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
 import 'package:flutter_music_player_ui/screen/gradient_progress_bar.dart';
 import 'package:flutter_music_player_ui/screen/song_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:volume_controller/volume_controller.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_music_player_ui/service/audio_services.dart';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -30,9 +30,6 @@ class MusicPlayerScreen extends StatefulWidget {
 
   /// Whether to display the song queue at the bottom.
   final bool showQueue;
-
-  /// Whether repeat mode is enabled by default.
-  final bool repeat;
 
   /// Whether to show the download icon.
   final bool showDownloadIcon;
@@ -64,7 +61,6 @@ class MusicPlayerScreen extends StatefulWidget {
   /// Gradient end color for the song card widget.
   final Color songGradiantColor2;
 
-  final bool isBackMusic;
 
   /// Creates a [MusicPlayerScreen] with all UI and playback options.
   const MusicPlayerScreen({
@@ -72,7 +68,6 @@ class MusicPlayerScreen extends StatefulWidget {
     required this.songs,
     required this.initialIndex,
     this.showQueue = false,
-    this.repeat = false,
     this.showDownloadIcon = false,
     this.gradiant1 = const Color(0xFF8E2DE2),
     this.gradiant2 = const Color(0xFF4A00E0),
@@ -83,7 +78,6 @@ class MusicPlayerScreen extends StatefulWidget {
     this.descriptionColor = const Color(0xffCECECE),
     this.songGradiantColor1 = const Color(0xFF8E2DE2),
     this.songGradiantColor2 = const Color(0xFFC18FF3),
-    this.isBackMusic = false,
   });
 
   @override
@@ -91,107 +85,52 @@ class MusicPlayerScreen extends StatefulWidget {
 }
 
 class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  final AudioPlayerService _audioService = AudioPlayerService();
-  double _volume = 0.6;
-  bool _isPaused = false;
-  bool _isLoading = true;
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  int _currentIndex = 0;
-  final PageController _pageController = PageController();
-  late List<int> _playOrder;
-
-  bool _isRepeat = false;
-
+  bool _isLoading = false;
+  final audioService = AudioPlayerService();
+  bool isPlaying = true;
+  bool _isMuted = false;
+  double _lastVolume = 1.0;
   double _downloadProgress = 0.0;
   bool _isDownloading = false;
-
-  MusicModel get currentSongModel => widget.songs[_playOrder[_currentIndex]];
-
-  String get currentSong => widget.songs[_playOrder[_currentIndex]].url;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
-    _isRepeat = widget.repeat;
-    _playOrder = List.generate(widget.songs.length, (i) => i);
-    _currentIndex = widget.initialIndex;
-
-    VolumeController.instance.showSystemUI = false;
-    VolumeController.instance.addListener((v) => setState(() => _volume = v));
-    VolumeController.instance.getVolume().then(
-      (v) => setState(() => _volume = v),
-    );
-
-    _setupAudio();
-    if (!mounted) return;
-    _audioService.onPositionChanged.listen((pos) {
-      setState(() => _position = pos);
-      // call here
-      updateCurrentSong();
+    _isLoading = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await audioService.setPlaylist(widget.songs, false, startAt: widget.initialIndex);
+      // set current song
+      GlobalModelNotifier.currentSongNotifier.value = widget.songs[widget.initialIndex];
+      // start playback
+      await audioService.play();
+      // show mini player
+      miniPlayerController.showMiniPlayer();
     });
-    if (!mounted) return;
-    _audioService.onDurationChanged.listen((dur) {
-      setState(() => _duration = dur);
-      // call here
-      updateCurrentSong();
-    });
-    if (!mounted) return;
-    _audioService.onPlayerComplete.listen((_) {
-      if (_currentIndex < _playOrder.length - 1 || _isRepeat) {
-        _playNext();
-      } else {
-        _audioService.stop();
+    // 🔹 Listen for song loading states
+    audioService.player.processingStateStream.listen((state) {
+      if (state == ProcessingState.loading || state == ProcessingState.buffering) {
+        setState(() => _isLoading = true);
+      } else if (state == ProcessingState.ready) {
+        setState(() => _isLoading = false);
       }
-      // call here
-      updateCurrentSong();
     });
-  }
-
-  void updateCurrentSong() {
-    GlobalModelNotifier.currentSongNotifier.value = currentSongModel;
-  }
-
-  /// Sets up the audio player and begins playing the selected song.
-  Future<void> _setupAudio() async {
-    setState(() {
-      _isLoading = true;
-      _position = Duration.zero;
-      _duration = Duration.zero;
+    // 🔹 Listen for track changes
+    audioService.player.currentIndexStream.listen((index) {
+      if (index != null && index >= 0 && index < widget.songs.length) {
+        GlobalModelNotifier.currentSongNotifier.value = widget.songs[index];
+      }
     });
-    await _audioService.play(currentSong);
-    setState(() => _isLoading = false);
   }
 
   @override
   void dispose() {
-    if (!widget.isBackMusic) {
-      stopMusic();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        miniPlayerController.showMiniPlayer();
+      }
+    });
     super.dispose();
-  }
-
-  /// Plays the next song in the list. Respects repeat mode.
-  void _playNext() {
-    if (_currentIndex < _playOrder.length - 1) {
-      _currentIndex++;
-    } else if (_isRepeat) {
-      _currentIndex = 0;
-    } else {
-      return;
-    }
-
-    _isPaused = false;
-    _setupAudio();
-  }
-
-  /// Plays the previous song if available.
-  void _playPrevious() {
-    if (_currentIndex > 0) {
-      _currentIndex--;
-      _isPaused = false;
-      _setupAudio();
-    }
   }
 
   /// Formats a [Duration] into mm:ss format.
@@ -209,10 +148,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double progress = _duration.inMilliseconds == 0
-        ? 0.0
-        : _position.inMilliseconds / _duration.inMilliseconds;
-
     return Scaffold(
       appBar: AppBar(toolbarHeight: 0, backgroundColor: widget.gradiant1),
       body: Container(
@@ -232,7 +167,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   InkWell(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pop(context);
+                      miniPlayerController.showMiniPlayer(); // Show mini player on back
+                    },
                     child: Container(
                       width: 45,
                       height: 45,
@@ -257,7 +195,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       onPressed: _isLoading
                           ? null
                           : () {
-                              _downloadCurrentSong(context);
+
                             },
                     ),
                   ),
@@ -266,19 +204,25 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 
               Expanded(
                 child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: widget.showQueue ? 20 : 25),
-                      _buildHeaderArtwork(),
-                      SizedBox(height: widget.showQueue ? 15 : 20),
-                      _isLoading
-                          ? _shimmerLine(width: 220, height: 16)
-                          : Align(
+                  child: ValueListenableBuilder<MusicModel?>(
+                      valueListenable: GlobalModelNotifier.currentSongNotifier,
+                      builder: (context, currentSong, _) {
+                        if (currentSong == null) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height:25),
+                            _buildHeaderArtwork(),
+                            SizedBox(height: 20),
+                            _isLoading
+                                ? _shimmerLine(width: 220, height: 16)
+                                : Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                widget.songs[_playOrder[_currentIndex]].title ??
-                                    currentSong.split("/").last,
+                                currentSong.title ?? currentSong.url.split("/").last,
                                 style: TextStyle(
                                   color: widget.titleColor,
                                   fontSize: 14,
@@ -286,21 +230,16 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                 ),
                               ),
                             ),
-                      SizedBox(height: widget.showQueue ? 4 : 8),
-                      _isLoading
-                          ? _shimmerLine(width: 120, height: 12)
-                          : Visibility(
+                            SizedBox(height: 8),
+                            _isLoading
+                                ? _shimmerLine(width: 120, height: 12)
+                                : Visibility(
                               visible:
-                                  widget
-                                      .songs[_playOrder[_currentIndex]]
-                                      .description
-                                      ?.isNotEmpty ==
-                                  true,
+                              currentSong.description?.isNotEmpty == true,
                               child: Align(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  widget.songs[_playOrder[_currentIndex]].description ??
-                                      '',
+                                  currentSong.description ?? '',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -311,186 +250,111 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                 ),
                               ),
                             ),
-                      SizedBox(height: widget.showQueue ? 24 : 30),
-                      _isLoading
-                          ? _shimmerLine(height: 10)
-                          : GradientProgressBar(
-                              value: progress.clamp(0.0, 1.0),
-                              totalDuration: _duration,
-                              gradiant1: widget.gradiant1,
-                              gradiant2: widget.gradiant2,
-                              onSeek: (position) {
-                                _audioService.seek(position);
+                            SizedBox(height:20),
+                            _isLoading
+                                ? _shimmerLine(height: 10)
+                                : _buildDraggableProgressBar(),
+                            SizedBox(height: 10),
+                            StreamBuilder<int>(
+                              stream: audioService.currentIndexStream,
+                              initialData: audioService.currentIndex,
+                              builder: (context, indexSnapshot) {
+                                final index = indexSnapshot.data ?? 0;
+                                return StreamBuilder<bool>(
+                                  stream: audioService.isRepeatingStream,
+                                  initialData: audioService.isRepeating,
+                                  builder: (context, repeatSnapshot) {
+                                    return Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        // 🔹 NEW: Mute / Unmute button
+                                        IconButton(
+                                          icon: Icon(
+                                            _isMuted ? Icons.volume_off : Icons.volume_up,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              if (_isMuted) {
+                                                audioService.setVolume(_lastVolume);
+                                                _isMuted = false;
+                                              } else {
+                                                _lastVolume = audioService.currentVolume ?? 1.0;
+                                                audioService.setVolume(0);
+                                                _isMuted = true;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.skip_previous,
+                                            color: index > 0 ? Colors.white : Colors.white.withOpacity(0.4),
+                                          ),
+                                          onPressed: index > 0
+                                              ? () => audioService.playPrevious()
+                                              : null,
+                                        ),
+                                        StreamBuilder<bool>(
+                                          stream: audioService.isPlayingStream,
+                                          initialData: true,
+                                          builder: (context, playingSnapshot) {
+                                            final playing = playingSnapshot.data ?? false;
+                                            return IconButton(
+                                              icon: Icon(
+                                                playing
+                                                    ? Icons.pause_circle_filled
+                                                    : Icons.play_circle_fill,
+                                                size: 55,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () async {
+                                                if (playing) {
+                                                  setState(() {
+                                                    isPlaying=false;
+                                                  });
+                                                  await audioService.pause();
+                                                } else {
+                                                  setState(() {
+                                                    isPlaying=true;
+                                                  });
+                                                  await audioService.resume();
+                                                }
+                                              },
+                                            );
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.skip_next,
+                                            color: (index < audioService.playlistLength - 1 || audioService.isRepeating)
+                                                ? Colors.white
+                                                : Colors.white.withOpacity(0.4),
+                                          ),
+                                          onPressed: (index < audioService.playlistLength - 1 || audioService.isRepeating)
+                                              ? () => audioService.playNext()
+                                              : null,
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            audioService.isRepeating ? Icons.repeat_on : Icons.repeat,
+                                            color: Colors.white,
+                                          ),
+                                          onPressed: () {
+                                            setState(() => audioService.toggleRepeat());
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
                               },
                             ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _isLoading
-                              ? _shimmerLine(width: 40, height: 10)
-                              : Text(
-                                  formatDuration(_position),
-                                  style: TextStyle(
-                                    color: widget.titleColor,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                          _isLoading
-                              ? _shimmerLine(width: 40, height: 10)
-                              : Text(
-                                  formatDuration(_duration),
-                                  style: TextStyle(
-                                    color: widget.titleColor,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                        ],
-                      ),
-                      SizedBox(height: widget.showQueue ? 15 : 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: _isLoading
-                                ? _shimmerIcon(Icons.repeat)
-                                : Icon(
-                                    Icons.repeat,
-                                    color: _isRepeat
-                                        ? Colors.pinkAccent
-                                        : widget.iconColor,
-                                    size: 24,
-                                  ),
-                            onPressed: _isLoading
-                                ? null
-                                : () {
-                                    setState(() => _isRepeat = !_isRepeat);
-                                  },
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed: _isLoading || _currentIndex == 0
-                                ? null
-                                : _playPrevious,
-                            icon: _isLoading
-                                ? _shimmerIcon(Icons.skip_previous)
-                                : Icon(
-                                    Icons.skip_previous,
-                                    color: _currentIndex == 0
-                                        ? Colors.white38
-                                        : widget.iconColor,
-                                    size: 30,
-                                  ),
-                          ),
-                          const SizedBox(width: 16),
-                          StreamBuilder<PlayerState>(
-                            stream: _audioService.onPlayerStateChanged,
-                            builder: (context, snapshot) {
-                              final isPlaying =
-                                  snapshot.data == PlayerState.playing;
-                              final icon = Icon(
-                                isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: widget.iconColor,
-                                size: 30,
-                              );
-                              return IconButton(
-                                icon: _isLoading
-                                    ? _shimmerIcon(
-                                        isPlaying
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
-                                      )
-                                    : icon,
-                                onPressed: _isLoading
-                                    ? null
-                                    : () {
-                                        if (isPlaying) {
-                                          _isPaused = true;
-                                          _audioService.pause();
-                                        } else {
-                                          _isPaused
-                                              ? _audioService.resume()
-                                              : _setupAudio();
-                                          _isPaused = false;
-                                        }
-                                      },
-                              );
-                            },
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed:
-                                _isLoading ||
-                                    (!_isRepeat &&
-                                        _currentIndex == _playOrder.length - 1)
-                                ? null
-                                : _playNext,
-                            icon: _isLoading
-                                ? _shimmerIcon(Icons.skip_next)
-                                : Icon(
-                                    Icons.skip_next,
-                                    color:
-                                        (!_isRepeat &&
-                                            _currentIndex ==
-                                                _playOrder.length - 1)
-                                        ? Colors.white38
-                                        : widget.iconColor,
-                                    size: 30,
-                                  ),
-                          ),
-                          const SizedBox(width: 40),
-                        ],
-                      ),
-                      SizedBox(height: widget.showQueue ? 15 : 20),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.volume_down,
-                            color: widget.iconColor,
-                            size: 30,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Slider(
-                              value: _volume,
-                              min: 0,
-                              max: 1,
-                              activeColor: widget.gradiant1,
-                              onChanged: _isLoading
-                                  ? null
-                                  : (value) async {
-                                      _volume = value;
-                                      await VolumeController.instance.setVolume(
-                                        value,
-                                      );
-                                      _audioService.setVolume(value);
-                                      setState(() {});
-                                    },
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.volume_up,
-                            color: widget.iconColor,
-                            size: 30,
-                          ),
-                        ],
-                      ),
-                      // 🔽 Queue
-                      Visibility(
-                        visible: widget.showQueue,
-                        child: SongStackWidget(
-                          songGradiantColor1: widget.songGradiantColor1,
-                          songGradiantColor2: widget.songGradiantColor2,
-                          textColor: widget.titleColor,
-                          songs: _playOrder
-                              .sublist(_currentIndex)
-                              .map((i) => widget.songs[i])
-                              .toList(),
-                          onNext: _playNext,
-                        ),
-                      ),
-                    ],
-                  ),
+                            SizedBox(height: 15),
+                            _volumeSlider(),
+                          ],
+                        );
+                      })
                 ),
               ),
             ],
@@ -536,7 +400,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       child: Lottie.asset(
                         lottieFiles[index],
                         package: 'flutter_music_player_ui',
-                        repeat: _isPaused ? false : true,
+                        repeat: isPlaying?true:false,
                         fit: BoxFit.contain,
                       ),
                     );
@@ -587,177 +451,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     );
   }
 
-  /// Downloads the currently playing song and shows a progress dialog.
-  Future<void> _downloadCurrentSong(BuildContext context) async {
-    final url = currentSong;
-    final title =
-        widget.songs[_playOrder[_currentIndex]].title?.replaceAll(' ', '_') ??
-        'audio_${DateTime.now().millisecondsSinceEpoch}';
-
-    try {
-      if (Platform.isAndroid) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Storage permission denied')),
-          );
-          return;
-        }
-      }
-
-      final dir = await getDownloadDirectory();
-      if (dir == null) {
-        if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to access storage')),
-        );
-        return;
-      }
-
-      final filePath = '${dir.path}/$title.mp3';
-      final dio = Dio();
-
-      _downloadProgress = 0.0;
-      _isDownloading = true;
-
-      StateSetter? setDialogState;
-
-      if (!context.mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => StatefulBuilder(
-          builder: (context, setState) {
-            setDialogState = setState;
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 24,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    colors: [widget.gradiant1, widget.gradiant2],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(77),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: _isDownloading
-                      ? Column(
-                          key: const ValueKey('progress'),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.download_rounded,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              "Downloading...",
-                              style: TextStyle(
-                                color: widget.titleColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            GradientProgressDownloadBar(
-                              value: _downloadProgress.clamp(0.0, 1.0),
-                              gradiant1: widget.gradiant1,
-                              gradiant2: widget.gradiant2,
-                              height: 8,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              "${(_downloadProgress * 100).toStringAsFixed(0)}%",
-                              style: TextStyle(
-                                color: widget.descriptionColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          key: const ValueKey('success'),
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Lottie.asset(
-                              'assets/success_check.json',
-                              package: 'flutter_music_player_ui',
-                              width: 100,
-                              height: 100,
-                              repeat: false,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              "Download Complete!",
-                              style: TextStyle(
-                                color: widget.titleColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            );
-          },
-        ),
-      );
-
-      await dio.download(
-        url,
-        filePath,
-        onReceiveProgress: (received, total) {
-          if (total != -1) {
-            _downloadProgress = received / total;
-            if (setDialogState != null) {
-              setDialogState!(() {}); // updates the dialog's UI
-            }
-          }
-        },
-      );
-
-      _isDownloading = false;
-      if (setDialogState != null) {
-        setDialogState!(() {}); // Trigger AnimatedSwitcher to show success
-      }
-
-      await Future.delayed(const Duration(seconds: 2)); // Allow Lottie to play
-
-      if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // Close dialog
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('✅ Downloaded to: ${dir.path}')));
-    } catch (e) {
-      _isDownloading = false;
-      if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop(); // Close dialog
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('❌ Download failed')));
-      debugPrint("Download error: $e");
-    }
-  }
-
   /// Returns the appropriate download directory for the platform.
   Future<Directory?> getDownloadDirectory() async {
     if (Platform.isAndroid) {
@@ -774,7 +467,109 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
     }
   }
 
-  void stopMusic() async{
-    await _audioService.stop();
+  Widget _buildDraggableProgressBar() {
+    return StreamBuilder<Duration?>(
+      stream: audioService.durationStream,
+      builder: (context, durationSnapshot) {
+        final duration = durationSnapshot.data ?? Duration.zero;
+
+        return StreamBuilder<Duration>(
+          stream: audioService.positionStream,
+          builder: (context, positionSnapshot) {
+            final position = positionSnapshot.data ?? Duration.zero;
+            final progress = duration.inMilliseconds > 0
+                ? position.inMilliseconds / duration.inMilliseconds
+                : 0.0;
+
+            return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragUpdate: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final localOffset = box.globalToLocal(details.globalPosition);
+                final relative = localOffset.dx / box.size.width;
+                final newPosition = duration * relative.clamp(0.0, 1.0);
+                audioService.seek(newPosition);
+              },
+              onTapDown: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final relative = details.localPosition.dx / box.size.width;
+                final newPosition = duration * relative.clamp(0.0, 1.0);
+                audioService.seek(newPosition);
+              },
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(51),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: progress.isNaN ? 0.0 : progress.clamp(0.0, 1.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                            ),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        formatDuration(position),
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                      Text(
+                        formatDuration(duration),
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _volumeSlider() {
+    return StreamBuilder<double>(
+      stream: audioService.volumeStream,
+      initialData: 1.0,
+      builder: (context, snapshot) {
+        final volume = snapshot.data ?? 1.0;
+        return Row(
+          children: [
+            const Icon(Icons.volume_down, color: Colors.white),
+            Expanded(
+              child: Slider(
+                value: volume,
+                min: 0.0,
+                max: 1.0,
+                activeColor: Color(0xFF8E2DE2),
+                inactiveColor: Colors.grey.withAlpha(200),
+                onChanged: (value) {
+                  audioService.setVolume(value);
+                },
+              ),
+            ),
+            const Icon(Icons.volume_up, color: Colors.white),
+          ],
+        );
+      },
+    );
   }
 }
+
+

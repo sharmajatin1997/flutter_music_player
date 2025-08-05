@@ -1,131 +1,179 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
-import 'package:flutter_music_player_ui/screen/gradient_progress_bar.dart';
 import 'package:flutter_music_player_ui/service/audio_services.dart';
-import 'package:flutter_music_player_ui/service/global_model_notifier.dart';
+import 'package:flutter_music_player_ui/service/mini_player_controller.dart';
+import 'package:just_audio/just_audio.dart';
 
 class MiniPlayerWidget extends StatefulWidget {
-  final VoidCallback? onTap;
+  final MusicModel currentSong;
+  final Offset initialPosition;
 
-  const MiniPlayerWidget({super.key, this.onTap});
+  const MiniPlayerWidget({
+    super.key,
+    required this.currentSong,
+    this.initialPosition = const Offset(20, 100),
+  });
 
   @override
   State<MiniPlayerWidget> createState() => _MiniPlayerWidgetState();
 }
 
 class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
-  final AudioPlayerService audioService = AudioPlayerService();
-  Offset position = const Offset(20, 100); // Initial position
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
+  late Offset position;
+  double? dragValue; // For progress bar dragging
+
+  @override
+  void initState() {
+    super.initState();
+    position = widget.initialPosition;
+  }
 
   @override
   Widget build(BuildContext context) {
-    double progress = _duration.inMilliseconds == 0
-        ? 0.0
-        : _position.inMilliseconds / _duration.inMilliseconds;
-    return StreamBuilder<PlayerState>(
-      stream: audioService.onPlayerStateChanged,
-      builder: (context, snapshot) {
-        final isPlaying = snapshot.data == PlayerState.playing;
-        if (!isPlaying) return const SizedBox(); // Hide when not playing
+    final audioService = AudioPlayerService();
 
-        return Positioned(
-          left: position.dx,
-          top: position.dy,
-          child: GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                position += details.delta;
-              });
-            },
-            onTap: widget.onTap,
-            child: _buildDraggableBubble(progress),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildDraggableBubble(double progress) {
-    return Material(
-      elevation: 10,
-      borderRadius: BorderRadius.circular(50),
-      color: Colors.purple.shade600.withAlpha(242),
-      child: Container(
-        width: 240,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        decoration: BoxDecoration(
+    return Positioned(
+      left: position.dx,
+      top: position.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            position += details.delta;
+          });
+        },
+        child: Material(
+          elevation: 10,
           borderRadius: BorderRadius.circular(50),
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF8E2DE2),
-              Color(0xFF4A00E0)
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          color: Colors.purple.shade600.withAlpha(242),
+          child: Container(
+            width: 240,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(50),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
               children: [
-                const Icon(Icons.music_note, color: Colors.white),
-                const SizedBox(width: 10),
-                ValueListenableBuilder<MusicModel?>(
-                  valueListenable: GlobalModelNotifier.currentSongNotifier,
-                  builder: (context, song, _) {
-                    debugPrint("current playing song $song ${song?.title}");
-                    if (song == null) return SizedBox.shrink();
-                    return Text(song.title ?? song.url.split("/").last,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                Row(
+                  children: [
+                    const Icon(Icons.music_note, color: Colors.white),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.currentSong.title ?? "Playing...",
+                        style: const TextStyle(color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    );
-                  },
+                    ),
+                    // Play/Pause toggle
+                    StreamBuilder<PlayerState>(
+                      stream: audioService.player.playerStateStream,
+                      builder: (context, snapshot) {
+                        final isPlaying = snapshot.data?.playing ?? false;
+                        return IconButton(
+                          icon: Icon(
+                            isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            if (isPlaying) {
+                              audioService.pause();
+                            } else {
+                              audioService.resume();
+                            }
+                          },
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () {
+                        audioService.pause();
+                        miniPlayerController.hideMiniPlayer();
+                      },
+                    ),
+                  ],
                 ),
-                Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.stop, color: Colors.white),
-                  tooltip: 'Stop Music',
-                  onPressed: () async {
-                    await audioService.stop();
-                  },
-                ),
+                _buildDraggableProgressBar(audioService),
               ],
             ),
-            GradientProgressBar(
-              value: progress.clamp(0.0, 1.0),
-              totalDuration: _duration,
-              gradiant1: Color(0xFF8E2DE2),
-              gradiant2: Color(0xFF4A00E0),
-              onSeek: (position) {
-                audioService.seek(position);
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildDraggableProgressBar(AudioPlayerService audioService) {
+    return StreamBuilder<Duration?>(
+      stream: audioService.durationStream,
+      builder: (context, durationSnapshot) {
+        final duration = durationSnapshot.data ?? Duration.zero;
 
-  @override
-  void initState() {
-    super.initState();
-    audioService.onPositionChanged.listen((pos) {
-      setState(() => _position = pos);
-    });
+        return StreamBuilder<Duration>(
+          stream: audioService.positionStream,
+          builder: (context, positionSnapshot) {
+            final position = dragValue != null
+                ? Duration(milliseconds: (duration.inMilliseconds * dragValue!).toInt())
+                : positionSnapshot.data ?? Duration.zero;
 
-    audioService.onDurationChanged.listen((dur) {
-      setState(() => _duration = dur);
-    });
+            final progress = duration.inMilliseconds > 0
+                ? position.inMilliseconds / duration.inMilliseconds
+                : 0.0;
+
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragUpdate: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final localOffset = box.globalToLocal(details.globalPosition);
+                setState(() {
+                  dragValue = (localOffset.dx / box.size.width).clamp(0.0, 1.0);
+                });
+              },
+              onHorizontalDragEnd: (_) {
+                if (dragValue != null) {
+                  audioService.seek(duration * dragValue!.clamp(0.0, 1.0));
+                  setState(() {
+                    dragValue = null;
+                  });
+                }
+              },
+              onTapDown: (details) {
+                final box = context.findRenderObject() as RenderBox;
+                final relative = details.localPosition.dx / box.size.width;
+                audioService.seek(duration * relative.clamp(0.0, 1.0));
+              },
+              child: SizedBox(
+                width: double.infinity,
+                child: Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(51),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress.isNaN ? 0.0 : progress.clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
+
+
