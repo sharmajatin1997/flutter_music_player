@@ -4,7 +4,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
 import 'package:flutter_music_player_ui/screen/gradient_progress_bar.dart';
-import 'package:flutter_music_player_ui/screen/song_card.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:flutter_music_player_ui/service/audio_services.dart';
@@ -68,9 +67,9 @@ class MusicPlayerScreen extends StatefulWidget {
     required this.songs,
     required this.initialIndex,
     this.showQueue = false,
-    this.showDownloadIcon = false,
-    this.gradiant1 = const Color(0xFF8E2DE2),
-    this.gradiant2 = const Color(0xFF4A00E0),
+    this.showDownloadIcon = true,
+    this.gradiant1 = const Color(0xE6451FA1),
+    this.gradiant2 = const Color(0xFF261066),
     this.indicatorDotColor = Colors.white30,
     this.indicatorActiveDotColor = Colors.white,
     this.iconColor = Colors.white,
@@ -154,8 +153,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [widget.gradiant1, widget.gradiant2],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: Padding(
@@ -187,7 +186,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                   ),
                   Visibility(
                     visible: widget.showDownloadIcon,
-                    child: IconButton(
+                    child: _isLoading ? _shimmerIcon(Icons.download_rounded):IconButton(
                       icon: Icon(
                         Icons.download_rounded,
                         color: widget.iconColor,
@@ -195,7 +194,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                       onPressed: _isLoading
                           ? null
                           : () {
-
+                        _downloadCurrentSong(context);
                             },
                     ),
                   ),
@@ -211,6 +210,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -268,7 +268,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         // 🔹 NEW: Mute / Unmute button
-                                        IconButton(
+                                        _isLoading ? _shimmerIcon(Icons.volume_up):IconButton(
                                           icon: Icon(
                                             _isMuted ? Icons.volume_off : Icons.volume_up,
                                             color: Colors.white,
@@ -286,7 +286,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                             });
                                           },
                                         ),
-                                        IconButton(
+                                        _isLoading ? _shimmerIcon(Icons.skip_previous): IconButton(
                                           icon: Icon(
                                             Icons.skip_previous,
                                             color: index > 0 ? Colors.white : Colors.white.withOpacity(0.4),
@@ -295,7 +295,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                               ? () => audioService.playPrevious()
                                               : null,
                                         ),
-                                        StreamBuilder<bool>(
+                                        _isLoading ? _shimmerIcon(Icons.play_circle_fill): StreamBuilder<bool>(
                                           stream: audioService.isPlayingStream,
                                           initialData: true,
                                           builder: (context, playingSnapshot) {
@@ -324,7 +324,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                             );
                                           },
                                         ),
-                                        IconButton(
+                                        _isLoading ? _shimmerIcon(Icons.skip_next): IconButton(
                                           icon: Icon(
                                             Icons.skip_next,
                                             color: (index < audioService.playlistLength - 1 || audioService.isRepeating)
@@ -335,10 +335,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                                               ? () => audioService.playNext()
                                               : null,
                                         ),
-                                        IconButton(
+                                        _isLoading ? _shimmerIcon(Icons.repeat): IconButton(
                                           icon: Icon(
-                                            audioService.isRepeating ? Icons.repeat_on : Icons.repeat,
-                                            color: Colors.white,
+                                             Icons.repeat,
+                                            color: audioService.isRepeating ?Colors.white:Colors.white.withOpacity(0.4),
                                           ),
                                           onPressed: () {
                                             setState(() => audioService.toggleRepeat());
@@ -388,8 +388,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     colors: [widget.gradiant2, widget.gradiant1],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                   ),
                 ),
                 child: PageView.builder(
@@ -551,25 +551,196 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         final volume = snapshot.data ?? 1.0;
         return Row(
           children: [
-            const Icon(Icons.volume_down, color: Colors.white),
+            _isLoading
+                ? _shimmerIcon(Icons.volume_down):const Icon(Icons.volume_down, color: Colors.white),
             Expanded(
-              child: Slider(
+              child: _isLoading
+                  ? _shimmerLine(height: 10):Slider(
                 value: volume,
                 min: 0.0,
                 max: 1.0,
-                activeColor: Color(0xFF8E2DE2),
-                inactiveColor: Colors.grey.withAlpha(200),
+                activeColor: Color(0xFF451FA1),
+                inactiveColor: Colors.white.withAlpha(51),
                 onChanged: (value) {
                   audioService.setVolume(value);
                 },
               ),
             ),
-            const Icon(Icons.volume_up, color: Colors.white),
+            _isLoading
+                ? _shimmerIcon(Icons.volume_up):const Icon(Icons.volume_up, color: Colors.white),
           ],
         );
       },
     );
   }
+
+  Future<void> _downloadCurrentSong(BuildContext context,) async {
+    final url =  GlobalModelNotifier.currentSongNotifier.value!.url;
+    final title = GlobalModelNotifier.currentSongNotifier.value!.title?.replaceAll(' ', '_') ?? 'audio_${DateTime.now().millisecondsSinceEpoch}';
+    try {
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Storage permission denied')),
+          );
+          return;
+        }
+      }
+
+      final dir = await getDownloadDirectory();
+      if (dir == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to access storage')),
+        );
+        return;
+      }
+
+      final filePath = '${dir.path}/$title.mp3';
+      final dio = Dio();
+
+      _downloadProgress = 0.0;
+      _isDownloading = true;
+
+      StateSetter? setDialogState;
+
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => StatefulBuilder(
+          builder: (context, setState) {
+            setDialogState = setState;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 40,
+                vertical: 24,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    colors: [widget.gradiant1, widget.gradiant2],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(77),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500),
+                  child: _isDownloading
+                      ? Column(
+                    key: const ValueKey('progress'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.download_rounded,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Downloading...",
+                        style: TextStyle(
+                          color: widget.titleColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      GradientProgressDownloadBar(
+                        value: _downloadProgress.clamp(0.0, 1.0),
+                        gradiant1: widget.gradiant1,
+                        gradiant2: widget.gradiant2,
+                        height: 8,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "${(_downloadProgress * 100).toStringAsFixed(0)}%",
+                        style: TextStyle(
+                          color: widget.descriptionColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )
+                      : Column(
+                    key: const ValueKey('success'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Lottie.asset(
+                        'assets/success_check.json',
+                        package: 'flutter_music_player_ui',
+                        width: 100,
+                        height: 100,
+                        repeat: false,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Download Complete!",
+                        style: TextStyle(
+                          color: widget.titleColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+
+      await dio.download(
+        url,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            _downloadProgress = received / total;
+            if (setDialogState != null) {
+              setDialogState!(() {}); // updates the dialog's UI
+            }
+          }
+        },
+      );
+
+      _isDownloading = false;
+      if (setDialogState != null) {
+        setDialogState!(() {}); // Trigger AnimatedSwitcher to show success
+      }
+
+      await Future.delayed(const Duration(seconds: 2)); // Allow Lottie to play
+
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('✅ Downloaded to: ${dir.path}')));
+    } catch (e) {
+      _isDownloading = false;
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('❌ Download failed')));
+      debugPrint("Download error: $e");
+    }
+  }
+
 }
 
 
