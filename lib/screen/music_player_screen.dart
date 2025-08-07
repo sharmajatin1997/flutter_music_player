@@ -114,12 +114,6 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         setState(() => _isLoading = false);
       }
     });
-    // 🔹 Listen for track changes
-    audioService.player.currentIndexStream.listen((index) {
-      if (index != null && index >= 0 && index < widget.songs.length) {
-        GlobalModelNotifier.currentSongNotifier.value = widget.songs[index];
-      }
-    });
   }
 
   @override
@@ -210,7 +204,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
-
+                          print(currentSong.title );
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

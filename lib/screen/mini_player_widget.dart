@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_music_player_ui/model/music_model.dart';
 import 'package:flutter_music_player_ui/service/audio_services.dart';
+import 'package:flutter_music_player_ui/service/global_model_notifier.dart';
 import 'package:flutter_music_player_ui/service/mini_player_controller.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MiniPlayerWidget extends StatefulWidget {
   final MusicModel currentSong;
@@ -21,7 +23,7 @@ class MiniPlayerWidget extends StatefulWidget {
 class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
   late Offset position;
   double? dragValue; // For progress bar dragging
-
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
@@ -31,7 +33,13 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
   @override
   Widget build(BuildContext context) {
     final audioService = AudioPlayerService();
-
+    audioService.player.processingStateStream.listen((state) {
+      if (state == ProcessingState.loading || state == ProcessingState.buffering) {
+        setState(() => _isLoading = true);
+      } else if (state == ProcessingState.ready) {
+        setState(() => _isLoading = false);
+      }
+    });
     return Positioned(
       left: position.dx,
       top: position.dy,
@@ -51,26 +59,31 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(50),
               gradient: const LinearGradient(
-                colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+                colors: [Color(0xE6451FA1), Color(0xFF261066)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             child: Column(
               children: [
+                _isLoading? const SizedBox(height: 6):SizedBox.shrink(),
                 Row(
                   children: [
-                    const Icon(Icons.music_note, color: Colors.white),
+                    _isLoading?_shimmerIcon(Icons.music_note):const Icon(Icons.music_note, color: Colors.white),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        widget.currentSong.title ?? "Playing...",
-                        style: const TextStyle(color: Colors.white),
-                        overflow: TextOverflow.ellipsis,
+                      child:_isLoading? _shimmerLine(): ValueListenableBuilder<MusicModel?>(
+                        valueListenable: GlobalModelNotifier.currentSongNotifier,
+                        builder: (context, song, _) {
+                          return Text(
+                            song?.title ?? "Playing...",
+                            style: const TextStyle(color: Colors.white),
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
-                    // Play/Pause toggle
-                    StreamBuilder<PlayerState>(
+                    _isLoading?_shimmerIcon(Icons.pause):StreamBuilder<PlayerState>(
                       stream: audioService.player.playerStateStream,
                       builder: (context, snapshot) {
                         final isPlaying = snapshot.data?.playing ?? false;
@@ -89,7 +102,7 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
                         );
                       },
                     ),
-                    IconButton(
+                    _isLoading?_shimmerIcon(Icons.close):IconButton(
                       icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () {
                         audioService.pause();
@@ -98,7 +111,7 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
                     ),
                   ],
                 ),
-                _buildDraggableProgressBar(audioService),
+                _isLoading? _shimmerLine():_buildDraggableProgressBar(audioService),
               ],
             ),
           ),
@@ -172,6 +185,34 @@ class _MiniPlayerWidgetState extends State<MiniPlayerWidget> {
           },
         );
       },
+    );
+  }
+  /// Returns a shimmer line placeholder used during loading.
+  Widget _shimmerLine({double width = double.infinity, double height = 14}) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Shimmer.fromColors(
+        baseColor: Color(0xFF261066).withAlpha(77),
+        highlightColor: Colors.white.withAlpha(153),
+        child: Container(
+          width: width,
+          height: height,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Returns a shimmer icon placeholder used during loading.
+  Widget _shimmerIcon(IconData? icon) {
+    return Shimmer.fromColors(
+      baseColor: Color(0xFF261066).withAlpha(77),
+      highlightColor: Colors.white.withAlpha(153),
+      child: Icon(icon, color: Colors.white, size: 30),
     );
   }
 }
